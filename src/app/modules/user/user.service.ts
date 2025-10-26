@@ -42,6 +42,7 @@ const getAllFromDB = async ({page, limit, searchTerm, sortBy, sortOrder, role, s
                 contains: searchTerm,
                 mode: "insensitive",
             },
+        // filtering
             role : role,
             status: status
         },
@@ -53,7 +54,6 @@ const getAllFromDB = async ({page, limit, searchTerm, sortBy, sortOrder, role, s
         : {
             createdAt: 'desc',
         },
-        // filtering
     });
 
     return result
