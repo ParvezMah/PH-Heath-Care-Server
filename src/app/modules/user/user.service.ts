@@ -2,6 +2,9 @@ import bcrypt from "bcryptjs";
 import { Request } from "express";
 import { fileUploader } from "../../helpers/fileUploader";
 import { prisma } from "../../shared/prisma";
+import { paginationHelper } from "../../helpers/paginationHelper";
+import { Prisma } from "@prisma/client";
+import { userSearchableFields } from "./user.constant";
 
 const createPatient = async (req: Request) => {
     if (req.file) {
@@ -28,32 +31,48 @@ const createPatient = async (req: Request) => {
 }
 
 const getAllFromDB = async (params: any, options: any) => {
-    const pageNumber = options.page || 1;
-    const limitNumber = options.limit || 10;
-    const skip = (pageNumber-1)*limitNumber;
-    console.log("role : ", role, "status : ", status);
+    const { page, limit, skip, sortBy, sortOrder } = paginationHelper.calculatePagination(options)
+    const { searchTerm, ...filterData } = params;
+
+    const andConditions: Prisma.UserWhereInput[] = [];
+
+    // Searching
+    if (searchTerm) {
+        andConditions.push({
+            OR: userSearchableFields.map(field => ({
+                [field]: {
+                    contains: searchTerm,
+                    mode: "insensitive"
+                }
+            }))
+        })
+    }
+
+    // Filtering
+    if (Object.keys(filterData).length > 0) {
+        andConditions.push({
+            AND: Object.keys(filterData).map(key => ({
+                [key]: {
+                    equals: (filterData as any)[key]
+                }
+            }))
+        })
+    }
+
+    console.log(andConditions)
+
     const result = await prisma.user.findMany({
         // Pagination
         skip, 
-        take: limitNumber,
+        take: limit,
         // Search
         where : {
-            email : {
-                contains: searchTerm,
-                mode: "insensitive",
-            },
-        // filtering
-            role : role,
-            status: status
+            AND: andConditions
         },
         // Sorting
-        orderBy: sortBy && sortOrder 
-        ? {
+        orderBy: {
             [sortBy]: sortOrder
         }
-        : {
-            createdAt: 'desc',
-        },
     });
 
     return result
