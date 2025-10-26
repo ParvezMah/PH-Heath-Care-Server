@@ -4,7 +4,7 @@ import { jwtHelper } from "../helpers/jwtHelper";
 const auth = (...roles: string[]) => {
     return async (req: Request & { user?: any }, res: Response, next: NextFunction) => {
         try {
-            const token = req.cookies.get("accessToken");
+            const token = req.cookies.accessToken;
 
             if (!token) {
                 throw new Error("You are not authorized!")
