@@ -40,7 +40,6 @@ const createDoctor = catchAsync(async (req: Request, res: Response) => {
     })
 });
 
-
 const getAllFromDB = catchAsync(async (req: Request, res: Response) => {
 
     const filters = pick(req.query, userFilterableFields) // searching , filtering
