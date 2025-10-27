@@ -67,7 +67,9 @@ const insertIntoDB = async (payload: any) => {
 }
 
 const schedulesForDoctor = async (user: IJWTPayload, filters: any , options: IOptions) => {
+    // Step 1: Pagination
     const { page, limit, skip, sortBy, sortOrder } = paginationHelper.calculatePagination(options);
+    // Step 2: Date Filters
     const { startDateTime: filterStartDateTime, endDateTime: filterEndDateTime } = filters;    
 
     const andConditions: Prisma.ScheduleWhereInput[] = [];
@@ -88,7 +90,7 @@ const schedulesForDoctor = async (user: IJWTPayload, filters: any , options: IOp
             ]
         })
     }
-
+    // Step 3: Construct where Condition
     const whereConditions: Prisma.ScheduleWhereInput = andConditions.length > 0 ? {
         AND: andConditions
     } : {}
