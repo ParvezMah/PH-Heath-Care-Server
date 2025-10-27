@@ -4,6 +4,7 @@ import sendResponse from "../../shared/sendResponse";
 import { ScheduleService } from "./schedule.service";
 import pick from "../../helpers/pick";
 import { userFilterableFields } from "../user/user.constant";
+import { IJWTPayload } from "../../types/common";
 
 
 const insertIntoDB = catchAsync(async (req: Request, res: Response) => {
@@ -17,13 +18,13 @@ const insertIntoDB = catchAsync(async (req: Request, res: Response) => {
     })
 });
 
-const schedulesForDoctor = catchAsync(async (req: Request , res: Response) => {
+const schedulesForDoctor = catchAsync(async (req: Request & { user?: IJWTPayload }, res: Response) => {
 
     const options = pick(req.query, ["page", "limit", "sortBy", "sortOrder"]) // pagination and sorting
     const filters = pick(req.query, ["startDateTime", "endDateTime"]) // searching , filtering
 
-
-    const result = await ScheduleService.schedulesForDoctor(filters, options);
+    const user = req.user
+    const result = await ScheduleService.schedulesForDoctor(user as IJWTPayload, filters, options);
 
     sendResponse(res, {
         statusCode: 200,
