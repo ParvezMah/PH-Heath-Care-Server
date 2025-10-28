@@ -6,6 +6,7 @@ import { IDoctorUpdateInput } from "./doctor.interface";
 import ApiError from "../../errors/ApiError";
 import httpStatus from "http-status";
 import { openai } from "../../helpers/open-router";
+import { extractJsonFromMessage } from "../../helpers/extractJsonFromMessage";
 
 const getAllFromDB = async (filters: any, options: IOptions) => {
   const { page, limit, skip, sortBy, sortOrder } =
@@ -100,7 +101,7 @@ const getAISuggestions = async (payload: { symptoms: string }) => {
     },
   });
 
-  console.log({ doctors });
+console.log("doctors data loaded.......\n");
 
   const prompt = `
         You are a medical assistant AI. Based on the patient's symptoms, suggest the top 3 most suitable doctors.
@@ -115,6 +116,7 @@ const getAISuggestions = async (payload: { symptoms: string }) => {
         Return your response in JSON format with full individual doctor data. 
         `;
 
+  console.log("analyzing......\n")
   const completion = await openai.chat.completions.create({
     model: "z-ai/glm-4.5-air:free",
     messages: [
@@ -130,8 +132,14 @@ const getAISuggestions = async (payload: { symptoms: string }) => {
     ],
   });
 
+  const result = await extractJsonFromMessage(completion.choices[0].message)
+  console.log(result);
+  return result;
+
 
 };
+
+
 
 const updateIntoDB = async (
   id: string,
