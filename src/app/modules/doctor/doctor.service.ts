@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { IOptions, paginationHelper } from "../../helpers/paginationHelper";
 import { doctorSearchableFields } from "./doctor.constant";
+import { prisma } from "../../shared/prisma";
 
 const getAllFromDB = async (filters: any, options: IOptions) => {
     const { page, limit, skip, sortBy, sortOrder } = paginationHelper.calculatePagination(options);
@@ -27,6 +28,30 @@ const getAllFromDB = async (filters: any, options: IOptions) => {
         }))
 
         andConditions.push(...filterConditions)
+    }
+
+    const whereConditions: Prisma.DoctorWhereInput = andConditions.length > 0 ? { AND: andConditions } : {};
+
+    const result = await prisma.doctor.findMany({
+        where: whereConditions,
+        skip,
+        take: limit,
+        orderBy: {
+            [sortBy]: sortOrder
+        },
+    });
+
+    const total = await prisma.doctor.count({
+        where: whereConditions
+    })
+
+    return {
+        meta: {
+            total,
+            page,
+            limit
+        },
+        data: result
     }
 
 
