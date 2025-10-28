@@ -14,7 +14,8 @@ export const extractJsonFromMessage = (message: any) => {
             return JSON.parse(content);
         }
 
-        // 3. Try to find the first JSON-like substring (fallback)
+        // 3. Try to find the first JSON-like substring (fallback) 
+        // Fixed ```json```
         const jsonFallbackMatch = content.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
         if (jsonFallbackMatch) {
             return JSON.parse(jsonFallbackMatch[1]);
