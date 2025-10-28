@@ -1,0 +1,8 @@
+model Appointment {
+}
+
+model Payment {
+}
+
+model Prescription {
+}
