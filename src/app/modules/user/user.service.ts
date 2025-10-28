@@ -7,13 +7,21 @@ import { Admin, Doctor, Prisma, UserRole } from "@prisma/client";
 import { userSearchableFields } from "./user.constant";
 
 const createPatient = async (req: Request) => {
+    // Uploads the profile photo to Cloudinary (if a file is uploaded).
     if (req.file) {
         const uploadResult = await fileUploader.uploadToCloudinary(req.file)
         req.body.patient.profilePhoto = uploadResult?.secure_url
     }
+
+    // Hashes the user’s password for security.
     const hashPassword = await bcrypt.hash(req.body.password, 10);
 
+    
+
+    // 3. in a single transaction (so that both succeed or both fail together).
+    // prisma.$transaction() groups multiple DB Operations together.
     const result = await prisma.$transaction(async (tnx) => {
+        // A record in the User table, and
         await tnx.user.create({
             data: {
                 email: req.body.patient.email,
@@ -21,6 +29,7 @@ const createPatient = async (req: Request) => {
             }
         });
 
+        // A record in the Patient table
         return await tnx.patient.create({
             data: req.body.patient
         })
