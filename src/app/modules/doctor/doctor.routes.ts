@@ -7,4 +7,9 @@ router.get(
     DoctorController.getAllFromDB
 )
 
+router.patch(
+    "/:id",
+    DoctorController.updateIntoDB
+)
+
 export const DoctorRoutes = router;
