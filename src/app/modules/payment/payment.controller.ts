@@ -6,7 +6,7 @@ import { stripe } from "../../helpers/stripe";
 
 const handleStripeWebhookEvent = catchAsync(async (req: Request, res: Response) => {
     const sig = req.headers["stripe-signature"] as string;
-    const webhookSecret = ""
+    const webhookSecret = "whsec_d6de0907533e7218fe73062a9e4253a82d25ad4508bec9748cf19b98942e4b09"
 
     let event;
     try {
