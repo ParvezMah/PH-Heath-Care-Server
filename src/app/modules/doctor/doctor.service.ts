@@ -55,21 +55,26 @@ const getAllFromDB = async (filters: any, options: IOptions) => {
   const whereConditions: Prisma.DoctorWhereInput =
     andConditions.length > 0 ? { AND: andConditions } : {};
 
-  const result = await prisma.doctor.findMany({
-    where: whereConditions,
-    skip,
-    take: limit,
-    orderBy: {
-      [sortBy]: sortOrder,
-    },
-    include: {
-      doctorSpecialties: {
-        include: {
-          specialities: true,
+    const result = await prisma.doctor.findMany({
+        where: whereConditions,
+        skip,
+        take: limit,
+        orderBy: {
+            [sortBy]: sortOrder
         },
-      },
-    },
-  });
+        include: {
+            doctorSpecialties: {
+                include: {
+                    specialities: true
+                }
+            },
+            reviews: {
+                select: {
+                    rating: true
+                }
+            }
+        }
+    });
 
   const total = await prisma.doctor.count({
     where: whereConditions,
@@ -155,7 +160,8 @@ const getByIdFromDB = async (id: string): Promise<Doctor | null> => {
                 include: {
                     schedule: true
                 }
-            }
+            },
+            reviews: true
         },
     });
     return result;
