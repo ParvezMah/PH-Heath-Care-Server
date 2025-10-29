@@ -105,6 +105,7 @@ const softDelete = async (id: string): Promise<Patient | null> => {
 };
 
 const updateIntoDB = async (user: IJWTPayload, payload: any) => {
+    console.log({payload})
     const { medicalReport, patientHealthData, ...patientData } = payload;
 
     const patientInfo = await prisma.patient.findUniqueOrThrow({
@@ -122,6 +123,38 @@ const updateIntoDB = async (user: IJWTPayload, payload: any) => {
             data: patientData
         })
 
+        if (patientHealthData) {
+            await tnx.patientHealthData.upsert({
+                where: {
+                    patientId: patientInfo.id
+                },
+                update: patientHealthData,
+                create: {
+                    ...patientHealthData,
+                    patientId: patientInfo.id
+                }
+            })
+        }
+
+        if (medicalReport) {
+            await tnx.medicalReport.create({
+                data: {
+                    ...medicalReport,
+                    patientId: patientInfo.id
+                }
+            })
+        }
+
+        const result = await tnx.patient.findUnique({
+            where: {
+                id: patientInfo.id
+            },
+            include: {
+                patientHealthData: true,
+                medicalReports: true
+            }
+        })
+        return result;
     })
 
 
