@@ -53,7 +53,7 @@ const createAppointment = async (user: IJWTPayload, payload: { doctorId: string,
 
         const transactionId = uuidv4();
 
-        await tnx.payment.create({
+        const paymentData = await tnx.payment.create({
             data: {
                 appointmentId: appointmentData.id,
                 amount: doctorData.appointmentFee,
@@ -77,16 +77,21 @@ const createAppointment = async (user: IJWTPayload, payload: { doctorId: string,
                     quantity: 1,
                 },
             ],
+            metadata: {
+                appointmentId: appointmentData.id,
+                paymentId: paymentData.id
+            },
             success_url: `https://www.programming-hero.com/`,
             cancel_url: `https://next.programming-hero.com/`,
         });
 
-        console.log({session})
+        return { paymentUrl: session.url };
     })
 
 
     return result;
 };
+
 
 
 
