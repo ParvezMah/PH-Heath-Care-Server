@@ -20,6 +20,27 @@ const getAllFromDB = catchAsync(async (req: Request, res: Response) => {
     })
 })
 
+const getAISuggestions = catchAsync(async (req: Request, res: Response) => {
+    const result = await DoctorService.getAISuggestions(req.body);
+    sendResponse(res, {
+        statusCode: 200,
+        success: true,
+        message: 'AI suggestions fetched successfully',
+        data: result,
+    });
+});
+
+const getByIdFromDB = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const result = await DoctorService.getByIdFromDB(id);
+    sendResponse(res, {
+        statusCode: 200,
+        success: true,
+        message: 'Doctor retrieval successfully',
+        data: result,
+    });
+});
+
 
 const updateIntoDB = catchAsync(async (req: Request, res: Response) => {
 
@@ -35,8 +56,34 @@ const updateIntoDB = catchAsync(async (req: Request, res: Response) => {
     })
 })
 
+const deleteFromDB = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const result = await DoctorService.deleteFromDB(id);
+    sendResponse(res, {
+        statusCode: 200,
+        success: true,
+        message: 'Doctor deleted successfully',
+        data: result,
+    });
+});
+
+const softDelete = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const result = await DoctorService.softDelete(id);
+    sendResponse(res, {
+        statusCode: 200,
+        success: true,
+        message: 'Doctor soft deleted successfully',
+        data: result,
+    });
+});
+
 
 export const DoctorController = {
     getAllFromDB,
-    updateIntoDB
+    getAISuggestions,
+    getByIdFromDB,
+    updateIntoDB,
+    deleteFromDB,
+    softDelete
 }
