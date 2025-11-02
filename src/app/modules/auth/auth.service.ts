@@ -21,9 +21,9 @@ const login = async (payload: { email: string, password: string }) => {
         throw new ApiError(httpStatus.BAD_REQUEST, "Password is incorrect!")
     }
 
-    const accessToken = jwtHelper.generateToken({ email: user.email, role: user.role }, "abcd", "1h");
+    const accessToken = jwtHelper.generateToken({ email: user.email, role: user.role }, config.jwt.jwt_secret as Secret, "1h");
 
-    const refreshToken = jwtHelper.generateToken({ email: user.email, role: user.role }, "abcdefgh", "90d");
+    const refreshToken = jwtHelper.generateToken({ email: user.email, role: user.role }, config.jwt.refresh_token_secret as Secret, "90d");
 
     return {
         accessToken,
@@ -158,10 +158,35 @@ const resetPassword = async (token: string, payload: { id: string, password: str
     })
 };
 
+const getMe = async (session: any) => {
+    const accessToken = session.accessToken;
+    // verify token
+    const decodedData = jwtHelper.verifyToken(accessToken, config.jwt.jwt_secret as Secret);
+
+    const userData = await prisma.user.findUniqueOrThrow({
+        where: {
+            email: decodedData.email,
+            status: UserStatus.ACTIVE
+        }
+    })
+
+    const { id, email, role, needPasswordChange, status } = userData;
+
+    return {
+        id,
+        email,
+        role,
+        needPasswordChange,
+        status
+    }
+
+}
+
 export const AuthService = {
     login,
     refreshToken,
     changePassword,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    getMe
 }
