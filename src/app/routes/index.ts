@@ -9,6 +9,7 @@ import { AppointmentRoutes } from '../modules/appointment/appointment.routes';
 import { PrescriptionRoutes } from '../modules/prescription/prescription.routes';
 import { ReviewRoutes } from '../modules/review/review.routes';
 import { PatientRoutes } from '../modules/patient/patient.routes';
+import { AdminRoutes } from '../modules/admin/admin.routes';
 
 const router = express.Router();
 
@@ -37,6 +38,14 @@ const moduleRoutes = [
         path: '/doctor',
         route: DoctorRoutes
     },
+        {
+        path: '/admin',
+        route: AdminRoutes
+    },
+        {
+        path: '/patient',
+        route: PatientRoutes
+    },
     {
         path: '/appointment',
         route: AppointmentRoutes
@@ -49,10 +58,8 @@ const moduleRoutes = [
         path: '/review',
         route: ReviewRoutes
     },
-    {
-        path: '/patient',
-        route: PatientRoutes
-    },
+
+    // Node Cron Jobs can be added here
 ];
 
 moduleRoutes.forEach(route => router.use(route.path, route.route));
