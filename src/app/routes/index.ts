@@ -38,11 +38,11 @@ const moduleRoutes = [
         path: '/doctor',
         route: DoctorRoutes
     },
-        {
+    {
         path: '/admin',
         route: AdminRoutes
     },
-        {
+    {
         path: '/patient',
         route: PatientRoutes
     },
@@ -58,7 +58,6 @@ const moduleRoutes = [
         path: '/review',
         route: ReviewRoutes
     },
-
     // Node Cron Jobs can be added here
 ];
 
