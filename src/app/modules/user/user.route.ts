@@ -1,9 +1,9 @@
-import express, { NextFunction, Request, Response } from 'express'
-import { UserController } from "./user.controller";
-import { fileUploader } from "../../helpers/fileUploader";
-import { UserValidation } from './user.validation';
-import auth from '../../middlewares/auth';
 import { UserRole } from '@prisma/client';
+import express, { NextFunction, Request, Response } from 'express';
+import { fileUploader } from "../../helpers/fileUploader";
+import auth from '../../middlewares/auth';
+import { UserController } from "./user.controller";
+import { UserValidation } from './user.validation';
 
 const router = express.Router();
 
@@ -51,5 +51,12 @@ router.post(
         return UserController.createDoctor(req, res, next)
     }
 );
+
+router.patch(
+    '/:id/status',
+    auth(UserRole.ADMIN),
+    UserController.changeProfileStatus
+);
+
 
 export const UserRoutes = router;
