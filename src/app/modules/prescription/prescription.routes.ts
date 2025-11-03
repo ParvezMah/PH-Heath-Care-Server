@@ -5,6 +5,7 @@ import { PrescriptionController } from './prescription.controller';
 const router = express.Router();
 
 
+// my-prescription
 router.get(
     '/my-prescription',
     auth(UserRole.PATIENT),
