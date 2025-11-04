@@ -14,7 +14,7 @@ export default {
     },
     openRouterApiKey: process.env.OPENROUTER_API_KEY,
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
-    stripeWebhookSecreyKey: process.env.STRIPE_WEBHOOK_SECKRET_KEY,
+    stripeWebhookSecretKey: process.env.STRIPE_WEBHOOK_SECRET_KEY,
     emailSender: {
         email: process.env.EMAIL,
         app_pass: process.env.APP_PASS

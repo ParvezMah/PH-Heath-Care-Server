@@ -20,7 +20,7 @@ app.post(
 
 app.use(cors({
     origin: 'http://localhost:3000',
-    credentials: true
+    credentials: true 
 }));
 
 //parser
@@ -32,10 +32,13 @@ cron.schedule('* * * * *', () => {
     try {
         console.log("Node cron called at ", new Date())
         AppointmentService.cancelUnpaidAppointments();
+        console.log("Node cron called at after ", new Date())
     } catch (err) {
         console.error(err);
     }
 });
+
+
 
 // routes
 app.use("/api/v1", router);

@@ -254,50 +254,86 @@ const getAllFromDB = async (
 };
 
 const cancelUnpaidAppointments = async () => {
-    const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+    try {
+        console.log('Starting cancelUnpaidAppointments job at:', new Date().toISOString());
+        
+        const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
 
-    const unPaidAppointments = await prisma.appointment.findMany({
-        where: {
-            createdAt: {
-                lte: thirtyMinAgo
-            },
-            paymentStatus: PaymentStatus.UNPAID
-        }
-    })
-
-    const appointmentIdsToCancel = unPaidAppointments.map(appointment => appointment.id);
-
-    await prisma.$transaction(async (tnx) => {
-        await tnx.payment.deleteMany({
+        const unPaidAppointments = await prisma.appointment.findMany({
             where: {
-                appointmentId: {
-                    in: appointmentIdsToCancel
-                }
-            }
-        })
-
-        await tnx.appointment.deleteMany({
-            where: {
-                id: {
-                    in: appointmentIdsToCancel
-                }
-            }
-        })
-
-        for (const unPaidAppointment of unPaidAppointments) {
-            await tnx.doctorSchedules.update({
-                where: {
-                    doctorId_scheduleId: {
-                        doctorId: unPaidAppointment.doctorId,
-                        scheduleId: unPaidAppointment.scheduleId
-                    }
+                createdAt: {
+                    lte: thirtyMinAgo
                 },
-                data: {
-                    isBooked: false
-                }
-            })
+                paymentStatus: PaymentStatus.UNPAID
+            },
+            // include: {
+            //     review: true // Include reviews to check if any exist
+            // }
+        });
+
+        console.log(`Found ${unPaidAppointments.length} unpaid appointments to process`);
+
+        const appointmentIdsToCancel = unPaidAppointments.map(appointment => appointment.id);
+        
+        if (appointmentIdsToCancel.length === 0) {
+            console.log('No unpaid appointments to cancel');
+            return;
         }
-    })
+        console.log({appointmentIdsToCancel})
+
+        await prisma.$transaction(async (tnx) => {
+            // First delete any reviews associated with these appointments
+            const deletedReviews = await tnx.review.deleteMany({
+                where: {
+                    appointmentId: {
+                        in: appointmentIdsToCancel
+                    }
+                }
+            });
+            console.log(`Deleted ${deletedReviews.count} reviews`);
+
+            // Then delete payments
+            const deletedPayments = await tnx.payment.deleteMany({
+                where: {
+                    appointmentId: {
+                        in: appointmentIdsToCancel
+                    }
+                }
+            });
+            console.log(`Deleted ${deletedPayments.count} payments`);
+
+            // Now we can safely delete appointments
+            const deletedAppointments = await tnx.appointment.deleteMany({
+                where: {
+                    id: {
+                        in: appointmentIdsToCancel
+                    }
+                }
+            });
+            console.log(`Deleted ${deletedAppointments.count} appointments`);
+
+            // Finally update doctor schedules
+            for (const unPaidAppointment of unPaidAppointments) {
+                await tnx.doctorSchedules.update({
+                    where: {
+                        doctorId_scheduleId: {
+                            doctorId: unPaidAppointment.doctorId,
+                            scheduleId: unPaidAppointment.scheduleId
+                        }
+                    },
+                    data: {
+                        isBooked: false
+                    }
+                });
+            }
+            console.log(`Updated ${unPaidAppointments.length} doctor schedules`);
+        });
+        
+        console.log('Successfully completed cancelUnpaidAppointments job at:', new Date().toISOString());
+    } catch (error) {
+        console.error('Error in cancelUnpaidAppointments:', error);
+        throw error;
+    }
 }
 
 export const AppointmentService = {
