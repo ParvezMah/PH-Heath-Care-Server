@@ -1,5 +1,5 @@
 import httpStatus  from 'http-status';
-import { AppointmentStatus, Prisma, UserRole } from "@prisma/client";
+import { AppointmentStatus, PaymentStatus, Prisma, UserRole } from "@prisma/client";
 import { IOptions, paginationHelper } from "../../helpers/paginationHelper";
 import { stripe } from "../../helpers/stripe";
 import { prisma } from "../../shared/prisma";
@@ -185,8 +185,161 @@ const updateAppointmentStatus = async (appointmentId: string, status: Appointmen
 
 }
 
+const getAllFromDB = async (
+    filters: any,
+    options: IOptions
+) => {
+    const { limit, page, skip } = paginationHelper.calculatePagination(options);
+    const { patientEmail, doctorEmail, ...filterData } = filters;
+    const andConditions = [];
+
+    if (patientEmail) {
+        andConditions.push({
+            patient: {
+                email: patientEmail
+            }
+        })
+    }
+    else if (doctorEmail) {
+        andConditions.push({
+            doctor: {
+                email: doctorEmail
+            }
+        })
+    }
+
+    if (Object.keys(filterData).length > 0) {
+        andConditions.push({
+            AND: Object.keys(filterData).map((key) => {
+                return {
+                    [key]: {
+                        equals: (filterData as any)[key]
+                    }
+                };
+            })
+        });
+    }
+
+    // console.dir(andConditions, { depth: Infinity })
+    const whereConditions: Prisma.AppointmentWhereInput =
+        andConditions.length > 0 ? { AND: andConditions } : {};
+
+    const result = await prisma.appointment.findMany({
+        where: whereConditions,
+        skip,
+        take: limit,
+        orderBy:
+            options.sortBy && options.sortOrder
+                ? { [options.sortBy]: options.sortOrder }
+                : {
+                    createdAt: 'desc',
+                },
+        include: {
+            doctor: true,
+            patient: true
+        }
+    });
+    const total = await prisma.appointment.count({
+        where: whereConditions
+    });
+
+    return {
+        meta: {
+            total,
+            page,
+            limit,
+        },
+        data: result,
+    };
+};
+
+const cancelUnpaidAppointments = async () => {
+    try {
+        console.log('Starting cancelUnpaidAppointments job at:', new Date().toISOString());
+        
+        const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+
+        const unPaidAppointments = await prisma.appointment.findMany({
+            where: {
+                createdAt: {
+                    lte: thirtyMinAgo
+                },
+                paymentStatus: PaymentStatus.UNPAID
+            },
+            // include: {
+            //     review: true // Include reviews to check if any exist
+            // }
+        });
+
+        console.log(`Found ${unPaidAppointments.length} unpaid appointments to process`);
+
+        const appointmentIdsToCancel = unPaidAppointments.map(appointment => appointment.id);
+        
+        if (appointmentIdsToCancel.length === 0) {
+            console.log('No unpaid appointments to cancel');
+            return;
+        }
+        console.log({appointmentIdsToCancel})
+
+        await prisma.$transaction(async (tnx) => {
+            // First delete any reviews associated with these appointments
+            const deletedReviews = await tnx.review.deleteMany({
+                where: {
+                    appointmentId: {
+                        in: appointmentIdsToCancel
+                    }
+                }
+            });
+            console.log(`Deleted ${deletedReviews.count} reviews`);
+
+            // Then delete payments
+            const deletedPayments = await tnx.payment.deleteMany({
+                where: {
+                    appointmentId: {
+                        in: appointmentIdsToCancel
+                    }
+                }
+            });
+            console.log(`Deleted ${deletedPayments.count} payments`);
+
+            // Now we can safely delete appointments
+            const deletedAppointments = await tnx.appointment.deleteMany({
+                where: {
+                    id: {
+                        in: appointmentIdsToCancel
+                    }
+                }
+            });
+            console.log(`Deleted ${deletedAppointments.count} appointments`);
+
+            // Finally update doctor schedules
+            for (const unPaidAppointment of unPaidAppointments) {
+                await tnx.doctorSchedules.update({
+                    where: {
+                        doctorId_scheduleId: {
+                            doctorId: unPaidAppointment.doctorId,
+                            scheduleId: unPaidAppointment.scheduleId
+                        }
+                    },
+                    data: {
+                        isBooked: false
+                    }
+                });
+            }
+            console.log(`Updated ${unPaidAppointments.length} doctor schedules`);
+        });
+        
+        console.log('Successfully completed cancelUnpaidAppointments job at:', new Date().toISOString());
+    } catch (error) {
+        console.error('Error in cancelUnpaidAppointments:', error);
+        throw error;
+    }
+}
+
 export const AppointmentService = {
     createAppointment,
     getMyAppointment,
-    updateAppointmentStatus
+    updateAppointmentStatus,
+    getAllFromDB,
+    cancelUnpaidAppointments
 };
